@@ -1,3 +1,12 @@
+import sys
+import asyncio
+
+# Fix Windows asyncio event loop policy for Playwright
+# MUST be set before any async operations
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    print("[Windows] Set asyncio event loop policy to WindowsSelectorEventLoopPolicy")
+
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -6,7 +15,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
-import asyncio
 import json
 import os
 
