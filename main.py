@@ -12,11 +12,17 @@ Hoac voi uvicorn:
 
 import sys
 import io
+import asyncio
 
 # Fix Windows encoding issue
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    
+    # Fix asyncio event loop policy for Playwright on Windows
+    # Playwright requires subprocess support which is not available in default policy
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    print("[Windows] Set asyncio event loop policy to WindowsSelectorEventLoopPolicy")
 
 import uvicorn
 from api import app
