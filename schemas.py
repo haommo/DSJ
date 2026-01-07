@@ -31,7 +31,7 @@ class AccountResponse(BaseModel):
 class TaskCreate(BaseModel):
     task_code: str
     account_ids: Optional[List[int]] = None  # Nếu None, chạy tất cả accounts
-    headless: bool = True  # True = ẩn browser, False = hiển browser (nhưng sẽ tự động ẩn xuống)
+    headless: bool = True  # True = ẩn browser, False = hiển browser
 
 
 class TaskResponse(BaseModel):
