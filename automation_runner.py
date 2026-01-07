@@ -62,14 +62,29 @@ class DSJAutomation:
         os.makedirs(self.screenshot_dir, exist_ok=True)
 
     async def _init_browser(self, headless: bool = True) -> bool:
-        """Khởi tạo browser với error handling"""
+        """Khởi tạo browser với error handling
+        
+        Args:
+            headless: Chạy browser ở chế độ headless (không hiển thị UI)
+        """
         try:
             logger.info(f"[{self.email}] Initializing browser...")
             self.playwright = await async_playwright().start()
+            
+            # Browser args
+            browser_args = ['--no-sandbox', '--disable-dev-shm-usage']
+            
+            # Nếu headless=False, tự động ẩn browser window ra ngoài màn hình
+            if not headless:
+                browser_args.extend([
+                    '--window-position=-2400,-2400',  # Đẩy cửa sổ ra ngoài màn hình
+                    '--start-minimized',  # Minimize khi khởi động (Windows)
+                ])
+            
             self.browser = await self.playwright.chromium.launch(
                 headless=headless,
                 slow_mo=200,
-                args=['--no-sandbox', '--disable-dev-shm-usage']
+                args=browser_args
             )
             self.page = await self.browser.new_page()
             
@@ -356,6 +371,9 @@ class DSJAutomation:
     async def run(self, headless: bool = True) -> Dict[str, Any]:
         """
         Chạy toàn bộ automation với error handling
+        
+        Args:
+            headless: Chạy browser ở chế độ headless (nếu False, browser sẽ tự động ẩn xuống)
         Returns: dict với kết quả chi tiết
         """
         result = {
