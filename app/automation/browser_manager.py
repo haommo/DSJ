@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from playwright.async_api import async_playwright, Page, Browser, Playwright
 
 from app.automation.constants import AutomationError, DEFAULT_TIMEOUT, SCREENSHOT_DIR
@@ -11,7 +11,7 @@ from app.automation.constants import AutomationError, DEFAULT_TIMEOUT, SCREENSHO
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
 
-async def init_browser(headless: bool = True) -> tuple[Playwright, Browser, Page]:
+async def init_browser(headless: bool = True) -> Tuple[Playwright, Browser, Page]:
     """Launch Chromium and return (playwright, browser, page)."""
     pw = None
     try:
