@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-this-to-a-random-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:3001,https://dsj.mrhao.us"
     ACCOUNT_ENCRYPTION_KEY: str = ""
 
     class Config:
