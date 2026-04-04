@@ -22,7 +22,7 @@ def get_statistics(
     - Admin/Staff: thống kê toàn bộ hệ thống
     - Customer: thống kê accounts của mình
     """
-    if current_user.role == UserRole.CUSTOMER:
+    if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF):
         account_codes = get_customer_account_codes(db, current_user)
         total_accounts = len(account_codes)
 

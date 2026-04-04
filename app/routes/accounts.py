@@ -24,7 +24,7 @@ def get_accounts(
     - Customer: chỉ xem accounts của mình
     """
     query = db.query(Account)
-    if current_user.role == UserRole.CUSTOMER:
+    if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF):
         query = query.filter(Account.owner_id == current_user.id)
     return query.offset(skip).limit(limit).all()
 
@@ -40,7 +40,7 @@ def get_account(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    if current_user.role == UserRole.CUSTOMER and account.owner_id != current_user.id:
+    if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF) and account.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     return account

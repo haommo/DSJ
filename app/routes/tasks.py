@@ -105,8 +105,8 @@ def get_tasks(
     if status:
         query = query.filter(Task.status == status)
 
-    # Customer chỉ thấy tasks có chứa accounts của mình
-    if current_user.role == UserRole.CUSTOMER:
+    # Customer/Staff chỉ thấy tasks có chứa accounts của mình
+    if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF):
         account_codes = get_customer_account_codes(db, current_user)
         if account_codes:
             task_ids = db.query(TaskDetail.task_id).filter(
@@ -124,8 +124,8 @@ def get_tasks(
     result = []
     for task in tasks:
         details = db.query(TaskDetail).filter(TaskDetail.task_id == task.id).all()
-        # Customer chỉ thấy details của accounts mình
-        if current_user.role == UserRole.CUSTOMER:
+        # Customer/Staff chỉ thấy details của accounts mình
+        if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF):
             details = [d for d in details if d.account_code in account_codes]
             c_total = len(details)
             c_success = sum(1 for d in details if d.status == ResultStatus.SUCCESS)
@@ -168,7 +168,7 @@ def get_task_detail(
 
     details = db.query(TaskDetail).filter(TaskDetail.task_id == task_id).all()
 
-    if current_user.role == UserRole.CUSTOMER:
+    if current_user.role in (UserRole.CUSTOMER, UserRole.STAFF):
         account_codes = get_customer_account_codes(db, current_user)
         details = [d for d in details if d.account_code in account_codes]
         if not details:
