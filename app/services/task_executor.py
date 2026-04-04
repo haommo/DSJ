@@ -132,13 +132,14 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
                 runs.append(_process_account(d, acc, task.task_code, headless, site_domain=SITE_DOMAIN))
 
             if runs:
+                # All items in retry batch were previously FAILED
                 results = await asyncio.gather(*runs, return_exceptions=True)
                 for d, r in zip(valid, results):
-                    was_failed = d.status == ResultStatus.FAILED
-                    old_counters = dict(counters)
+                    old_success = counters["success"]
                     handle_result(db, d, r, counters)
-                    if was_failed and counters["success"] > old_counters["success"]:
-                        counters["failed"] -= 1
+                    # If retry succeeded, subtract from failed count
+                    if counters["success"] > old_success:
+                        counters["failed"] = max(0, counters["failed"] - 1)
 
                 safe_commit(db, task,
                             success_count=counters["success"],
