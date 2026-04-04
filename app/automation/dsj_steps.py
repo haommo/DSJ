@@ -100,7 +100,7 @@ async def step_enter_code_and_confirm(
     page: Page, order_code: str, take_screenshot_fn
 ) -> Optional[str]:
     """Enter code and confirm. Returns screenshot path if already completed."""
-    bg_signal = page.locator('text=BG Wealth Signal')
+    bg_signal = page.locator('text=BG Wealth Sharing')
     try:
         await bg_signal.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
         await asyncio.sleep(1)
