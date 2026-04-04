@@ -127,11 +127,20 @@ def get_tasks(
         # Customer chỉ thấy details của accounts mình
         if current_user.role == UserRole.CUSTOMER:
             details = [d for d in details if d.account_code in account_codes]
+            c_total = len(details)
+            c_success = sum(1 for d in details if d.status == ResultStatus.SUCCESS)
+            c_failed = sum(1 for d in details if d.status == ResultStatus.FAILED)
+            c_balance = sum(d.balance or 0 for d in details if d.status == ResultStatus.SUCCESS)
+        else:
+            c_total = task.total_accounts
+            c_success = task.success_count
+            c_failed = task.failed_count
+            c_balance = task.total_balance
 
         result.append(TaskDetailResponse(
             id=task.id, task_code=task.task_code, status=task.status,
-            total_accounts=task.total_accounts, success_count=task.success_count,
-            failed_count=task.failed_count, total_balance=task.total_balance,
+            total_accounts=c_total, success_count=c_success,
+            failed_count=c_failed, total_balance=c_balance,
             created_by=task.created_by, created_at=task.created_at,
             updated_at=task.updated_at,
             details=_build_detail_items(db, details),
@@ -164,11 +173,20 @@ def get_task_detail(
         details = [d for d in details if d.account_code in account_codes]
         if not details:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
+        c_total = len(details)
+        c_success = sum(1 for d in details if d.status == ResultStatus.SUCCESS)
+        c_failed = sum(1 for d in details if d.status == ResultStatus.FAILED)
+        c_balance = sum(d.balance or 0 for d in details if d.status == ResultStatus.SUCCESS)
+    else:
+        c_total = task.total_accounts
+        c_success = task.success_count
+        c_failed = task.failed_count
+        c_balance = task.total_balance
 
     return TaskDetailResponse(
         id=task.id, task_code=task.task_code, status=task.status,
-        total_accounts=task.total_accounts, success_count=task.success_count,
-        failed_count=task.failed_count, total_balance=task.total_balance,
+        total_accounts=c_total, success_count=c_success,
+        failed_count=c_failed, total_balance=c_balance,
         created_by=task.created_by, created_at=task.created_at,
         updated_at=task.updated_at,
         details=_build_detail_items(db, details),
