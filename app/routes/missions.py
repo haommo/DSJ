@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -52,8 +52,10 @@ async def create_mission(
     if not accounts:
         raise HTTPException(status_code=400, detail="No valid accounts found (check follow_active status)")
 
-    task_code = f"MISSION-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    vn_tz = timezone(timedelta(hours=7))
+    task_code = f"MISSION-{datetime.now(vn_tz).strftime('%Y%m%d-%H%M%S')}"
     is_scheduled = data.scheduled_at is not None
+    scheduled_at_aware = data.scheduled_at.replace(tzinfo=vn_tz) if is_scheduled else None
 
     try:
         db_task = Task(
@@ -63,7 +65,7 @@ async def create_mission(
             total_accounts=len(accounts),
             created_by=current_user.id,
             headless=data.headless,
-            scheduled_at=data.scheduled_at,
+            scheduled_at=scheduled_at_aware,
         )
         db.add(db_task)
         db.flush()
