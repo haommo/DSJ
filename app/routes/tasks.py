@@ -9,7 +9,7 @@ import asyncio
 from app.database import get_db, SessionLocal
 from app.models.user import User, UserRole
 from app.models.account import Account
-from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus
+from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus, TaskType
 from app.schemas.task import (
     TaskCreate, TaskResponse, TaskDetailItem, TaskDetailResponse,
     PaginationMeta, TaskListResponse,
@@ -64,6 +64,7 @@ async def create_task(
     try:
         db_task = Task(
             task_code=task_data.task_code,
+            task_type=TaskType.TASK,
             status=TaskStatus.PENDING,
             total_accounts=len(accounts),
             created_by=current_user.id,
@@ -101,7 +102,7 @@ def get_tasks(
     page = max(1, page)
     page_size = max(1, min(page_size, 100))
 
-    query = db.query(Task).order_by(Task.created_at.desc())
+    query = db.query(Task).filter(Task.task_type == TaskType.TASK).order_by(Task.created_at.desc())
     if status:
         query = query.filter(Task.status == status)
 

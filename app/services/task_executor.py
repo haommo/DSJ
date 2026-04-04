@@ -4,9 +4,9 @@ import asyncio
 import logging
 from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus
+from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus, TaskType
 from app.models.account import Account
-from app.automation.runner import run_automation_for_account
+from app.automation.runner import run_automation_for_account, run_follow_order_for_account
 from app.services.setting_service import get_setting, get_setting_int
 from app.services.crypto_service import decrypt_password, is_encrypted
 from app.services.task_result_handler import safe_commit, handle_result
@@ -16,9 +16,22 @@ logger = logging.getLogger(__name__)
 MAX_RETRY_DURATION = 1800  # 30 minutes
 
 
-async def _process_account(detail, account, task_code, headless=True, site_domain="dsj079.com") -> dict:
+async def _process_account(
+    detail, account, task_code, headless=True, site_domain="dsj079.com",
+    task_type="task", confirm_text="", done_text="", completed_text="",
+    task_id=0,
+) -> dict:
     try:
         password = decrypt_password(account.password) if is_encrypted(account.password) else account.password
+        if task_type == TaskType.MISSION:
+            return await run_follow_order_for_account(
+                email=account.email, password=password,
+                account_code=account.account_code,
+                headless=headless, site_domain=site_domain,
+                confirm_text=confirm_text, done_text=done_text,
+                completed_text=completed_text,
+                task_id=task_id,
+            )
         return await run_automation_for_account(
             email=account.email, password=password,
             order_code=task_code, account_code=account.account_code,
@@ -46,6 +59,17 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
     BATCH_SIZE = get_setting_int(db, "batch_size")
     MAX_AUTO_RETRIES = get_setting_int(db, "max_retries")
     SITE_DOMAIN = get_setting(db, "site_domain")
+
+    # Follow-order settings (only used for missions)
+    follow_kwargs = {}
+    if task.task_type == TaskType.MISSION:
+        follow_kwargs = {
+            "task_type": TaskType.MISSION,
+            "task_id": task_id,
+            "confirm_text": get_setting(db, "follow_confirm_text"),
+            "done_text": get_setting(db, "follow_done_text"),
+            "completed_text": get_setting(db, "follow_completed_text"),
+        }
 
     # Classify existing results
     pending_details = []
@@ -85,7 +109,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
             safe_commit(db, d, status=ResultStatus.RUNNING)
             valid_details.append(d)
             tasks_to_run.append(
-                _process_account(d, account, task.task_code, headless, site_domain=SITE_DOMAIN)
+                _process_account(d, account, task.task_code, headless, site_domain=SITE_DOMAIN, **follow_kwargs)
             )
 
         if tasks_to_run:
@@ -129,7 +153,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
                     continue
                 safe_commit(db, d, status=ResultStatus.RUNNING, result_message=None)
                 valid.append(d)
-                runs.append(_process_account(d, acc, task.task_code, headless, site_domain=SITE_DOMAIN))
+                runs.append(_process_account(d, acc, task.task_code, headless, site_domain=SITE_DOMAIN, **follow_kwargs))
 
             if runs:
                 # All items in retry batch were previously FAILED

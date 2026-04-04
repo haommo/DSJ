@@ -29,6 +29,15 @@ def get_accounts(
     return query.offset(skip).limit(limit).all()
 
 
+@router.get("/follow-active", response_model=List[AccountResponse])
+def get_follow_active_accounts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """Lấy danh sách accounts có follow_active = true (Admin only, dùng cho tạo mission)"""
+    return db.query(Account).filter(Account.follow_active == True).all()
+
+
 @router.get("/{account_id}", response_model=AccountResponse)
 def get_account(
     account_id: int,

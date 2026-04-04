@@ -5,9 +5,9 @@ import logging
 from typing import Dict, Set
 from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus
+from app.models.task import Task, TaskDetail, TaskStatus, ResultStatus, TaskType
 from app.models.account import Account
-from app.automation.runner import run_automation_for_account
+from app.automation.runner import run_automation_for_account, run_follow_order_for_account
 from app.database import SessionLocal
 from app.services.setting_service import get_setting
 from app.services.crypto_service import decrypt_password, is_encrypted
@@ -64,11 +64,23 @@ class TaskManager:
 
             site_domain = get_setting(db, "site_domain")
             password = decrypt_password(account.password) if is_encrypted(account.password) else account.password
-            result = await run_automation_for_account(
-                email=account.email, password=password,
-                order_code=task.task_code, account_code=account.account_code,
-                headless=headless, site_domain=site_domain,
-            )
+
+            if task.task_type == TaskType.MISSION:
+                result = await run_follow_order_for_account(
+                    email=account.email, password=password,
+                    account_code=account.account_code,
+                    headless=headless, site_domain=site_domain,
+                    confirm_text=get_setting(db, "follow_confirm_text"),
+                    done_text=get_setting(db, "follow_done_text"),
+                    completed_text=get_setting(db, "follow_completed_text"),
+                    task_id=task_id,
+                )
+            else:
+                result = await run_automation_for_account(
+                    email=account.email, password=password,
+                    order_code=task.task_code, account_code=account.account_code,
+                    headless=headless, site_domain=site_domain,
+                )
 
             if result.get("success"):
                 safe_commit(db, detail, status=ResultStatus.SUCCESS,

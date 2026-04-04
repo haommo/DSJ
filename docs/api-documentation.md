@@ -59,12 +59,13 @@ Token được trả về từ `POST /api/auth/login`, hết hạn sau **1440 ph
 
 ### TaskStatus
 
-| Giá trị     | Mô tả                        |
-|-------------|-------------------------------|
-| `pending`   | Task đã tạo, chưa chạy       |
-| `running`   | Đang chạy automation          |
-| `completed` | Hoàn thành (có thể có failed) |
-| `failed`    | Thất bại hoặc bị hủy         |
+| Giá trị     | Mô tả                                    |
+|-------------|-------------------------------------------|
+| `pending`   | Task đã tạo, chưa chạy                   |
+| `scheduled` | Đã lên lịch, chờ đến `scheduled_at` để chạy |
+| `running`   | Đang chạy automation                     |
+| `completed` | Hoàn thành (có thể có failed)            |
+| `failed`    | Thất bại hoặc bị hủy                    |
 
 ### ResultStatus (trạng thái từng account trong task)
 
@@ -82,6 +83,18 @@ Token được trả về từ `POST /api/auth/login`, hết hạn sau **1440 ph
 | `batch_size`  | int    | `2`          | Số account chạy đồng thời trong 1 batch      |
 | `max_retries` | int    | `2`          | Số lần auto-retry cho account thất bại        |
 | `site_domain` | string | `dsj079.com` | Domain website DSJ để chạy automation         |
+| `follow_confirm_text` | string | `Confirm follow order` | Text nút xác nhận follow order |
+| `follow_done_text` | string | `Done` | Text nút Done sau khi confirm follow |
+| `follow_completed_text` | string | `Follow order completed` | Text hiển thị khi follow thành công |
+
+### TaskType
+
+| Giá trị   | Mô tả                     |
+|-----------|----------------------------|
+| `task`    | Task thường (mặc định)      |
+| `mission` | Follow order mission        |
+
+> Xem chi tiết Mission API tại [api-missions.md](api-missions.md)
 
 ---
 
@@ -307,12 +320,34 @@ Lấy danh sách tài khoản DSJ.
     "id": 1,
     "account_code": "ACC001",
     "email": "user@dsj.com",
-    "owner_id": 3
+    "owner_id": 3,
+    "follow_active": true
   }
 ]
 ```
 
 > **Lưu ý:** `password` **không bao giờ** trả về trong response.
+
+---
+
+### GET `/api/accounts/follow-active`
+
+Lấy danh sách accounts có `follow_active = true`. **Requires:** `admin`
+
+Dùng cho UI tạo mission — chỉ hiện accounts được phép chạy follow order.
+
+**Response `200`:** `AccountResponse[]`
+```json
+[
+  {
+    "id": 1,
+    "account_code": "ACC001",
+    "email": "user@dsj.com",
+    "owner_id": 3,
+    "follow_active": true
+  }
+]
+```
 
 ---
 
@@ -354,6 +389,7 @@ Thêm tài khoản mới. **Requires:** `admin` hoặc `staff`
 | `email`        | string | ✅       | Email đăng nhập DSJ (unique)       |
 | `password`     | string | ✅       | Mật khẩu (sẽ được mã hóa Fernet)  |
 | `owner_id`     | int?   | ❌       | ID user sở hữu (cho customer)     |
+| `follow_active`| bool   | ❌       | Cho phép chạy follow order (mặc định `true`) |
 
 **Response `200`:** `AccountResponse`
 
@@ -384,6 +420,7 @@ Sửa tài khoản. **Requires:** `admin` hoặc `staff`. Chỉ gửi field cầ
 | `email`        | string?| Email mới (unique)                 |
 | `password`     | string?| Mật khẩu mới (sẽ mã hóa)         |
 | `owner_id`     | int?   | ID user sở hữu mới                |
+| `follow_active`| bool?  | Bật/tắt follow order cho account   |
 
 **Response `200`:** `AccountResponse`
 

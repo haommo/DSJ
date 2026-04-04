@@ -9,6 +9,12 @@ class TaskCreate(BaseModel):
     headless: bool = True
 
 
+class MissionCreate(BaseModel):
+    account_ids: List[int]
+    headless: bool = True
+    scheduled_at: Optional[datetime] = None
+
+
 class TaskResponse(BaseModel):
     id: int
     task_code: str
@@ -18,6 +24,7 @@ class TaskResponse(BaseModel):
     failed_count: int
     total_balance: float
     created_by: Optional[int] = None
+    scheduled_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

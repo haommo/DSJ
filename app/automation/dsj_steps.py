@@ -11,7 +11,7 @@ from app.automation.constants import (
     SELECTOR_ORDER_CODE_INPUT, SELECTOR_BALANCE, SELECTORS_INVITED_ME,
     URL_LOGIN, URL_TRANSACTION, URL_ASSETS,
     VERIFY_TIMEOUT, INVITED_TAB_TIMEOUT, CONFIRM_TIMEOUT, BG_SIGNAL_TIMEOUT,
-    BALANCE_TIMEOUT,
+    BALANCE_TIMEOUT, FOLLOW_TIMEOUT,
 )
 
 logger = logging.getLogger(__name__)
@@ -141,3 +141,37 @@ async def step_get_balance(page: Page, site_domain: str) -> Optional[float]:
     except Exception:
         pass
     return None
+
+
+async def step_follow_order_confirm(
+    page: Page,
+    confirm_text: str,
+    done_text: str,
+    completed_text: str,
+    take_screenshot_fn,
+) -> Optional[str]:
+    """Follow order flow: click confirm -> click done -> wait completed -> screenshot."""
+    # Step 1: Wait for confirm button and click
+    confirm_btn = page.locator(f'text={confirm_text}').first
+    await confirm_btn.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+    await asyncio.sleep(1)
+    await confirm_btn.click()
+    logger.info(f"Clicked '{confirm_text}'")
+
+    # Step 2: Wait for done/ok button and click
+    await asyncio.sleep(2)
+    done_btn = page.locator(f'text={done_text}').first
+    await done_btn.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+    await asyncio.sleep(1)
+    await done_btn.click()
+    logger.info(f"Clicked '{done_text}'")
+
+    # Step 3: Wait for completed signal
+    await asyncio.sleep(2)
+    completed_signal = page.locator(f'text={completed_text}').first
+    await completed_signal.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+    logger.info(f"Follow order completed: '{completed_text}' visible")
+
+    await asyncio.sleep(1)
+    screenshot = await take_screenshot_fn("follow_completed")
+    return screenshot

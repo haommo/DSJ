@@ -4,7 +4,7 @@ from typing import List
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.system_setting import SystemSetting
-from app.schemas.system_setting import SettingUpdate, SettingResponse, AutomationSettingsResponse
+from app.schemas.system_setting import SettingUpdate, SettingResponse, AutomationSettingsResponse, FollowSettingsResponse
 from app.services.setting_service import get_setting, get_setting_int, DEFAULTS, invalidate_cache
 from app.dependencies import require_roles
 
@@ -37,6 +37,19 @@ def get_automation_settings(
         batch_size=get_setting_int(db, "batch_size"),
         max_retries=get_setting_int(db, "max_retries"),
         site_domain=get_setting(db, "site_domain"),
+    )
+
+
+@router.get("/follow", response_model=FollowSettingsResponse)
+def get_follow_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """Lấy settings follow order (Admin only)"""
+    return FollowSettingsResponse(
+        follow_confirm_text=get_setting(db, "follow_confirm_text"),
+        follow_done_text=get_setting(db, "follow_done_text"),
+        follow_completed_text=get_setting(db, "follow_completed_text"),
     )
 
 

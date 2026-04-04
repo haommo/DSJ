@@ -21,6 +21,7 @@ from app.database import engine, Base, SessionLocal
 from app.models import User, UserRole, Task, TaskDetail, TaskStatus, ResultStatus
 from app.services.auth_service import hash_password
 from app.services.setting_service import seed_defaults
+from app.services.mission_scheduler import mission_scheduler
 from app.routes import api_router
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,18 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Start mission scheduler
+    scheduler_task = asyncio.create_task(mission_scheduler())
+    logger.info("Mission scheduler started (check every 30s)")
+
     yield
+
+    # Cleanup scheduler on shutdown
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(

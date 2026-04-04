@@ -7,6 +7,7 @@ class AccountCreate(BaseModel):
     email: str
     password: str
     owner_id: Optional[int] = None
+    follow_active: bool = True
 
 
 class AccountUpdate(BaseModel):
@@ -14,6 +15,7 @@ class AccountUpdate(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
     owner_id: Optional[int] = None
+    follow_active: Optional[bool] = None
 
 
 class AccountResponse(BaseModel):
@@ -21,6 +23,7 @@ class AccountResponse(BaseModel):
     account_code: str
     email: str
     owner_id: Optional[int] = None
+    follow_active: bool = True
 
     class Config:
         from_attributes = True
