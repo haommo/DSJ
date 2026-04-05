@@ -17,9 +17,9 @@ MAX_RETRY_DURATION = 1800  # 30 minutes
 
 
 async def _process_account(
-    detail, account, task_code, headless=True, site_domain="dsj079.com",
+    detail, account, task_code, headless=True, site_domain: str = "",
     task_type="task", confirm_text="", done_text="", completed_text="",
-    task_id=0,
+    task_id=0, bg_signal_text: str = "",
 ) -> dict:
     try:
         password = decrypt_password(account.password) if is_encrypted(account.password) else account.password
@@ -28,6 +28,7 @@ async def _process_account(
                 email=account.email, password=password,
                 account_code=account.account_code,
                 headless=headless, site_domain=site_domain,
+                bg_signal_text=bg_signal_text,
                 confirm_text=confirm_text, done_text=done_text,
                 completed_text=completed_text,
                 task_id=task_id,
@@ -36,6 +37,7 @@ async def _process_account(
             email=account.email, password=password,
             order_code=task_code, account_code=account.account_code,
             headless=headless, site_domain=site_domain,
+            bg_signal_text=bg_signal_text,
         )
     except Exception as e:
         return {"success": False, "error": f"Exception: {str(e)}"}
@@ -59,6 +61,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
     BATCH_SIZE = get_setting_int(db, "batch_size")
     MAX_AUTO_RETRIES = get_setting_int(db, "max_retries")
     SITE_DOMAIN = get_setting(db, "site_domain")
+    BG_SIGNAL_TEXT = get_setting(db, "bg_signal_text")
 
     # Follow-order settings (only used for missions)
     follow_kwargs = {}
@@ -66,6 +69,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
         follow_kwargs = {
             "task_type": TaskType.MISSION,
             "task_id": task_id,
+            "bg_signal_text": BG_SIGNAL_TEXT,
             "confirm_text": get_setting(db, "follow_confirm_text"),
             "done_text": get_setting(db, "follow_done_text"),
             "completed_text": get_setting(db, "follow_completed_text"),
@@ -109,7 +113,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
             safe_commit(db, d, status=ResultStatus.RUNNING)
             valid_details.append(d)
             tasks_to_run.append(
-                _process_account(d, account, task.task_code, headless, site_domain=SITE_DOMAIN, **follow_kwargs)
+                _process_account(d, account, task.task_code, headless, site_domain=SITE_DOMAIN, bg_signal_text=BG_SIGNAL_TEXT, **follow_kwargs)
             )
 
         if tasks_to_run:
@@ -153,7 +157,7 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
                     continue
                 safe_commit(db, d, status=ResultStatus.RUNNING, result_message=None)
                 valid.append(d)
-                runs.append(_process_account(d, acc, task.task_code, headless, site_domain=SITE_DOMAIN, **follow_kwargs))
+                runs.append(_process_account(d, acc, task.task_code, headless, site_domain=SITE_DOMAIN, bg_signal_text=BG_SIGNAL_TEXT, **follow_kwargs))
 
             if runs:
                 # All items in retry batch were previously FAILED

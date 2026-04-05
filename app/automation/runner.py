@@ -19,12 +19,14 @@ class DSJAutomation:
     """Chạy automation cho 1 account DSJ"""
 
     def __init__(self, email: str, password: str, order_code: str,
-                 account_code: str = None, site_domain: str = "dsj079.com"):
+                 account_code: str = None, site_domain: str = "dsj079.com",
+                 bg_signal_text: str = "BG Wealth Sharing"):
         self.email = email
         self.password = password
         self.order_code = order_code
         self.account_code = account_code
         self.site_domain = site_domain
+        self.bg_signal_text = bg_signal_text
 
         self.pw = None
         self.browser = None
@@ -102,7 +104,8 @@ class DSJAutomation:
                     try:
                         self.current_step = "enter_code_confirm"
                         screenshot = await dsj_steps.step_enter_code_and_confirm(
-                            p, self.order_code, self._screenshot
+                            p, self.order_code, self._screenshot,
+                            bg_signal_text=self.bg_signal_text,
                         )
                         if screenshot:
                             self.screenshot_path = screenshot
@@ -151,12 +154,13 @@ class AutomationManager:
     async def run_for_account(self, email: str, password: str,
                               order_code: str, account_code: str = None,
                               headless: bool = True,
-                              site_domain: str = "dsj079.com") -> Dict[str, Any]:
+                              site_domain: str = "dsj079.com",
+                              bg_signal_text: str = "BG Wealth Sharing") -> Dict[str, Any]:
         key = f"{email}_{order_code}"
         if key in self.running:
             return {"success": False, "error": "Already running for this account"}
 
-        auto = DSJAutomation(email, password, order_code, account_code, site_domain=site_domain)
+        auto = DSJAutomation(email, password, order_code, account_code, site_domain=site_domain, bg_signal_text=bg_signal_text)
         self.running[key] = auto
         try:
             return await auto.run(headless=headless)
@@ -169,10 +173,12 @@ automation_manager = AutomationManager()
 
 async def run_automation_for_account(email: str, password: str, order_code: str,
                                      account_code: str = None, headless: bool = True,
-                                     site_domain: str = "dsj079.com") -> Dict[str, Any]:
+                                     site_domain: str = "dsj079.com",
+                                     bg_signal_text: str = "BG Wealth Sharing") -> Dict[str, Any]:
     return await automation_manager.run_for_account(
         email=email, password=password, order_code=order_code,
         account_code=account_code, headless=headless, site_domain=site_domain,
+        bg_signal_text=bg_signal_text,
     )
 
 
@@ -181,6 +187,7 @@ class DSJFollowAutomation:
 
     def __init__(self, email: str, password: str, account_code: str = None,
                  site_domain: str = "dsj079.com",
+                 bg_signal_text: str = "BG Wealth Sharing",
                  confirm_text: str = "Confirm follow order",
                  done_text: str = "Done",
                  completed_text: str = "Follow order completed"):
@@ -188,6 +195,7 @@ class DSJFollowAutomation:
         self.password = password
         self.account_code = account_code
         self.site_domain = site_domain
+        self.bg_signal_text = bg_signal_text
         self.confirm_text = confirm_text
         self.done_text = done_text
         self.completed_text = completed_text
@@ -264,27 +272,34 @@ class DSJFollowAutomation:
                 if not self.is_cancelled:
                     try:
                         self.current_step = "follow_order_confirm"
-                        screenshot = await dsj_steps.step_follow_order_confirm(
-                            p, self.confirm_text, self.done_text,
-                            self.completed_text, self._screenshot,
+                        step_result = await dsj_steps.step_follow_order_confirm(
+                            p, self.bg_signal_text, self.confirm_text,
+                            self.done_text, self.completed_text, self._screenshot,
                         )
-                        if screenshot:
-                            self.screenshot_path = screenshot
+                        status = step_result.get("status")
+                        self.screenshot_path = step_result.get("screenshot")
+
+                        if status == "not_eligible":
+                            result["error"] = "Không đủ điều kiện"
+                            result["failed_step"] = "follow_order_confirm"
+                            result["screenshot"] = self.screenshot_path
+                        elif status == "already_done":
+                            result["success"] = True
+                            result["message"] = "Đã hoàn thành trước đó"
+                            result["screenshot"] = self.screenshot_path
+                        elif status == "success":
+                            result["success"] = True
+                            result["message"] = "Thành công"
+                            result["screenshot"] = self.screenshot_path
                     except Exception as e:
                         result["error"] = f"Failed at step: follow_order_confirm - {str(e)}"
                         result["failed_step"] = "follow_order_confirm"
                         result["screenshot"] = await self._screenshot("failed_follow_confirm")
 
                 # Get balance
-                if not result["error"] and not self.is_cancelled:
+                if result.get("success") and not self.is_cancelled:
                     self.current_step = "get_balance"
                     self.balance = await dsj_steps.step_get_balance(p, d)
-
-                if not result["error"]:
-                    result["success"] = True
-                    result["message"] = "Thành công"
-                    if self.screenshot_path:
-                        result["screenshot"] = self.screenshot_path
 
             result["account_code"] = self.account_code
             result["balance"] = self.balance
@@ -309,6 +324,7 @@ class DSJFollowAutomation:
 async def run_follow_order_for_account(
     email: str, password: str, account_code: str = None,
     headless: bool = True, site_domain: str = "dsj079.com",
+    bg_signal_text: str = "BG Wealth Sharing",
     confirm_text: str = "Confirm follow order",
     done_text: str = "Done",
     completed_text: str = "Follow order completed",
@@ -318,6 +334,7 @@ async def run_follow_order_for_account(
 
     auto = DSJFollowAutomation(
         email, password, account_code, site_domain=site_domain,
+        bg_signal_text=bg_signal_text,
         confirm_text=confirm_text, done_text=done_text, completed_text=completed_text,
     )
     automation_manager.running[key] = auto

@@ -97,10 +97,11 @@ async def step_click_invited_me(page: Page) -> bool:
 
 
 async def step_enter_code_and_confirm(
-    page: Page, order_code: str, take_screenshot_fn
+    page: Page, order_code: str, take_screenshot_fn,
+    bg_signal_text: str = "BG Wealth Sharing",
 ) -> Optional[str]:
     """Enter code and confirm. Returns screenshot path if already completed."""
-    bg_signal = page.locator('text=BG Wealth Sharing')
+    bg_signal = page.locator(f'text={bg_signal_text}')
     try:
         await bg_signal.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
         await asyncio.sleep(1)
@@ -145,28 +146,63 @@ async def step_get_balance(page: Page, site_domain: str) -> Optional[float]:
 
 async def step_follow_order_confirm(
     page: Page,
+    bg_signal_text: str,
     confirm_text: str,
     done_text: str,
     completed_text: str,
     take_screenshot_fn,
-) -> Optional[str]:
-    """Follow order flow: click confirm -> click done -> wait completed -> screenshot."""
-    # Step 1: Wait for confirm button and click
+) -> dict:
+    """Follow order flow with 3 cases after clicking 'invited me'.
+
+    Returns dict: {"status": "success"|"already_done"|"not_eligible", "screenshot": path}
+    """
+    # Check bg_signal and confirm button presence
+    bg_signal = page.locator(f'text={bg_signal_text}').first
     confirm_btn = page.locator(f'text={confirm_text}').first
-    await confirm_btn.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+
+    bg_visible = False
+    confirm_visible = False
+
+    try:
+        await bg_signal.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+        bg_visible = True
+    except Exception:
+        pass
+
+    if bg_visible:
+        try:
+            await confirm_btn.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
+            confirm_visible = True
+        except Exception:
+            pass
+
+    # Case 2: bg_signal not visible → không đủ điều kiện
+    if not bg_visible:
+        await asyncio.sleep(1)
+        screenshot = await take_screenshot_fn("not_eligible")
+        return {"status": "not_eligible", "screenshot": screenshot}
+
+    # Case 1: bg_signal visible but no confirm button → already done
+    if bg_visible and not confirm_visible:
+        await asyncio.sleep(1)
+        screenshot = await take_screenshot_fn("already_completed")
+        return {"status": "already_done", "screenshot": screenshot}
+
+    # Case 3: both visible → click confirm → dialog confirm → wait completed
     await asyncio.sleep(1)
     await confirm_btn.click()
     logger.info(f"Clicked '{confirm_text}'")
 
-    # Step 2: Wait for done/ok button and click
+    # Wait for dialog confirm button and click
     await asyncio.sleep(2)
-    done_btn = page.locator(f'text={done_text}').first
-    await done_btn.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
+    dialog_btn_xpath = f"//div[@role='dialog']//button[span[text()='{done_text}']]"
+    dialog_btn = page.locator(dialog_btn_xpath).first
+    await dialog_btn.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
     await asyncio.sleep(1)
-    await done_btn.click()
-    logger.info(f"Clicked '{done_text}'")
+    await dialog_btn.click()
+    logger.info(f"Clicked dialog '{done_text}'")
 
-    # Step 3: Wait for completed signal
+    # Wait for completed signal
     await asyncio.sleep(2)
     completed_signal = page.locator(f'text={completed_text}').first
     await completed_signal.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
@@ -174,4 +210,4 @@ async def step_follow_order_confirm(
 
     await asyncio.sleep(1)
     screenshot = await take_screenshot_fn("follow_completed")
-    return screenshot
+    return {"status": "success", "screenshot": screenshot}

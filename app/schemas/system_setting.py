@@ -21,6 +21,7 @@ class AutomationSettingsResponse(BaseModel):
     batch_size: int
     max_retries: int
     site_domain: str
+    bg_signal_text: str
 
 
 class FollowSettingsResponse(BaseModel):

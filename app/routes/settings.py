@@ -37,6 +37,7 @@ def get_automation_settings(
         batch_size=get_setting_int(db, "batch_size"),
         max_retries=get_setting_int(db, "max_retries"),
         site_domain=get_setting(db, "site_domain"),
+        bg_signal_text=get_setting(db, "bg_signal_text"),
     )
 
 

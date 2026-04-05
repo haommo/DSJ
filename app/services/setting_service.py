@@ -13,6 +13,7 @@ DEFAULTS = {
     "follow_confirm_text": ("Confirm follow order", "Text nút xác nhận follow order"),
     "follow_done_text": ("Done", "Text nút Done/OK sau khi confirm follow"),
     "follow_completed_text": ("Follow order completed", "Text hiển thị khi follow thành công"),
+    "bg_signal_text": ("BG Wealth Sharing", "Text tín hiệu BG đã hoàn thành trên trang giao dịch"),
 }
 
 # In-memory cache: {key: (value, timestamp)}
