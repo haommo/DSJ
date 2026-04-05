@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 from typing import Optional
@@ -16,6 +16,7 @@ from app.schemas.task import (
 )
 from app.dependencies import get_current_user, require_roles
 from app.services.account_service import get_customer_account_codes
+from app.config import settings
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -68,6 +69,62 @@ async def create_task(
             status=TaskStatus.PENDING,
             total_accounts=len(accounts),
             created_by=current_user.id,
+        )
+        db.add(db_task)
+        db.flush()
+
+        for account in accounts:
+            db.add(TaskDetail(
+                task_id=db_task.id,
+                account_code=account.account_code,
+                status=ResultStatus.PENDING,
+            ))
+
+        db.commit()
+        db.refresh(db_task)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
+
+    from app.services.task_manager import task_manager
+    background_tasks.add_task(task_manager.run_task, db_task.id, task_data.headless)
+    return db_task
+
+
+INTERNAL_API_KEY = settings.SECRET_KEY
+
+
+@router.post("/internal", response_model=TaskResponse)
+async def create_task_internal(
+    task_data: TaskCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    x_api_key: str = Header(...),
+):
+    """Tạo task nội bộ bằng API key, không cần JWT/user."""
+    if x_api_key != INTERNAL_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    existing = db.query(Task).filter(Task.task_code == task_data.task_code).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Task code already exists")
+
+    if task_data.account_ids:
+        accounts = db.query(Account).filter(Account.id.in_(task_data.account_ids)).all()
+    else:
+        accounts = db.query(Account).all()
+
+    if not accounts:
+        raise HTTPException(status_code=400, detail="No accounts available")
+
+    try:
+        db_task = Task(
+            task_code=task_data.task_code,
+            task_type=TaskType.TASK,
+            status=TaskStatus.PENDING,
+            total_accounts=len(accounts),
+            created_by=None,
+            headless=task_data.headless,
         )
         db.add(db_task)
         db.flush()
