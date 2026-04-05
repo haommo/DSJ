@@ -69,7 +69,6 @@ async def execute_task(task_id: int, db: Session, cancelled_tasks: set, headless
         follow_kwargs = {
             "task_type": TaskType.MISSION,
             "task_id": task_id,
-            "bg_signal_text": BG_SIGNAL_TEXT,
             "confirm_text": get_setting(db, "follow_confirm_text"),
             "done_text": get_setting(db, "follow_done_text"),
             "completed_text": get_setting(db, "follow_completed_text"),
