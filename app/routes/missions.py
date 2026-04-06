@@ -116,8 +116,8 @@ def get_missions(
             id=task.id, task_code=task.task_code, status=task.status,
             total_accounts=task.total_accounts, success_count=task.success_count,
             failed_count=task.failed_count, total_balance=task.total_balance,
-            created_by=task.created_by, created_at=task.created_at,
-            updated_at=task.updated_at,
+            created_by=task.created_by, scheduled_at=task.scheduled_at,
+            created_at=task.created_at, updated_at=task.updated_at,
             details=_build_detail_items(db, details),
         ))
 
@@ -146,8 +146,8 @@ def get_mission_detail(
         id=task.id, task_code=task.task_code, status=task.status,
         total_accounts=task.total_accounts, success_count=task.success_count,
         failed_count=task.failed_count, total_balance=task.total_balance,
-        created_by=task.created_by, created_at=task.created_at,
-        updated_at=task.updated_at,
+        created_by=task.created_by, scheduled_at=task.scheduled_at,
+        created_at=task.created_at, updated_at=task.updated_at,
         details=_build_detail_items(db, details),
     )
 
