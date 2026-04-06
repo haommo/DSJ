@@ -27,16 +27,30 @@ def get_statistics(
         total_accounts = len(account_codes)
 
         if account_codes:
-            task_ids = db.query(TaskDetail.task_id).filter(
+            total_tasks = db.query(func.count(func.distinct(TaskDetail.task_id))).filter(
                 TaskDetail.account_code.in_(account_codes)
-            ).distinct().all()
-            task_ids = [t[0] for t in task_ids]
-            total_tasks = len(task_ids)
+            ).scalar()
 
+            # Lấy balance từ task mới nhất
+            latest_task = db.query(Task).join(TaskDetail).filter(
+                TaskDetail.account_code.in_(account_codes)
+            ).order_by(Task.created_at.desc()).first()
+
+            if latest_task:
+                total_balance = float(db.query(
+                    func.coalesce(func.sum(TaskDetail.balance), 0.0)
+                ).filter(
+                    TaskDetail.task_id == latest_task.id,
+                    TaskDetail.account_code.in_(account_codes),
+                    TaskDetail.status == ResultStatus.SUCCESS,
+                ).scalar())
+            else:
+                total_balance = 0.0
+
+            # Thống kê success rate từ tất cả task
             stats = db.query(
                 func.count().label("total"),
                 func.count().filter(TaskDetail.status == ResultStatus.SUCCESS).label("successful"),
-                func.coalesce(func.sum(TaskDetail.balance).filter(TaskDetail.status == ResultStatus.SUCCESS), 0.0).label("balance"),
             ).filter(
                 TaskDetail.account_code.in_(account_codes),
                 TaskDetail.status.in_([ResultStatus.SUCCESS, ResultStatus.FAILED]),
@@ -44,7 +58,6 @@ def get_statistics(
 
             total_results = stats.total
             successful = stats.successful
-            total_balance = float(stats.balance)
         else:
             total_tasks = 0
             total_results = 0
@@ -54,17 +67,29 @@ def get_statistics(
         total_accounts = db.query(func.count(Account.id)).scalar()
         total_tasks = db.query(func.count(Task.id)).scalar()
 
+        # Lấy balance từ task mới nhất
+        latest_task = db.query(Task).order_by(Task.created_at.desc()).first()
+
+        if latest_task:
+            total_balance = float(db.query(
+                func.coalesce(func.sum(TaskDetail.balance), 0.0)
+            ).filter(
+                TaskDetail.task_id == latest_task.id,
+                TaskDetail.status == ResultStatus.SUCCESS,
+            ).scalar())
+        else:
+            total_balance = 0.0
+
+        # Thống kê success rate từ tất cả task
         stats = db.query(
             func.count().label("total"),
             func.count().filter(TaskDetail.status == ResultStatus.SUCCESS).label("successful"),
-            func.coalesce(func.sum(TaskDetail.balance).filter(TaskDetail.status == ResultStatus.SUCCESS), 0.0).label("balance"),
         ).filter(
             TaskDetail.status.in_([ResultStatus.SUCCESS, ResultStatus.FAILED]),
         ).first()
 
         total_results = stats.total
         successful = stats.successful
-        total_balance = float(stats.balance)
 
     success_rate = (successful / total_results * 100) if total_results > 0 else 100.0
 
