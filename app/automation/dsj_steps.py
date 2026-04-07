@@ -17,6 +17,29 @@ from app.automation.constants import (
 logger = logging.getLogger(__name__)
 
 
+async def _find_visible_by_text(page: Page, text: str, timeout: int) -> tuple:
+    """Find a visible element matching text. Returns (is_visible, locator).
+
+    Handles case where multiple elements match but only nth one is visible.
+    """
+    locator = page.locator(f'text={text}')
+    try:
+        await locator.first.wait_for(state="attached", timeout=timeout)
+        count = await locator.count()
+        logger.info(f"[bg_signal] text='{text}' → {count} element(s) found in DOM")
+        for i in range(count):
+            el = locator.nth(i)
+            visible = await el.is_visible()
+            logger.info(f"[bg_signal] Element {i}: visible={visible}")
+            if visible:
+                return True, el
+        logger.warning(f"[bg_signal] All {count} element(s) matching '{text}' are NOT visible")
+        return False, locator.first
+    except Exception as e:
+        logger.info(f"[bg_signal] No elements found for text='{text}' within {timeout}ms: {e}")
+        return False, locator.first
+
+
 async def step_go_to_login(page: Page, site_domain: str) -> bool:
     url = URL_LOGIN.format(domain=site_domain)
     await page.goto(url, wait_until="networkidle")
@@ -101,14 +124,12 @@ async def step_enter_code_and_confirm(
     bg_signal_text: str = "BG Wealth Sharing",
 ) -> Optional[str]:
     """Enter code and confirm. Returns screenshot path if already completed."""
-    bg_signal = page.locator(f'text={bg_signal_text}')
-    try:
-        await bg_signal.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
+    logger.info(f"[enter_code_confirm] Checking bg_signal_text='{bg_signal_text}'")
+    bg_visible, bg_el = await _find_visible_by_text(page, bg_signal_text, BG_SIGNAL_TIMEOUT)
+    if bg_visible:
         await asyncio.sleep(1)
         screenshot = await take_screenshot_fn("already_completed")
         return screenshot  # Already completed
-    except Exception:
-        pass
 
     code_input = page.locator(SELECTOR_ORDER_CODE_INPUT)
     await code_input.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
@@ -120,7 +141,9 @@ async def step_enter_code_and_confirm(
     await confirm_btn.wait_for(state="visible")
     await confirm_btn.click()
 
-    await bg_signal.wait_for(state="visible", timeout=CONFIRM_TIMEOUT)
+    bg_visible, bg_el = await _find_visible_by_text(page, bg_signal_text, CONFIRM_TIMEOUT)
+    if not bg_visible:
+        raise Exception(f"bg_signal '{bg_signal_text}' not visible after confirm")
     await asyncio.sleep(1)
     screenshot = await take_screenshot_fn("confirm_success")
     return screenshot
@@ -157,19 +180,12 @@ async def step_follow_order_confirm(
     Returns dict: {"status": "success"|"already_done"|"not_eligible", "screenshot": path}
     """
     # Check bg_signal and confirm button presence
-    bg_signal = page.locator(f'text={bg_signal_text}').first
-    confirm_btn = page.locator(f'text={confirm_text}').first
+    logger.info(f"[follow_order] Checking bg_signal_text='{bg_signal_text}'")
+    bg_visible, bg_el = await _find_visible_by_text(page, bg_signal_text, FOLLOW_TIMEOUT)
 
-    bg_visible = False
     confirm_visible = False
-
-    try:
-        await bg_signal.wait_for(state="visible", timeout=FOLLOW_TIMEOUT)
-        bg_visible = True
-    except Exception:
-        pass
-
     if bg_visible:
+        confirm_btn = page.locator(f'text={confirm_text}').first
         try:
             await confirm_btn.wait_for(state="visible", timeout=BG_SIGNAL_TIMEOUT)
             confirm_visible = True

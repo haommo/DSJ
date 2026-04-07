@@ -63,6 +63,7 @@ class TaskManager:
             safe_commit(db, detail, status=ResultStatus.RUNNING)
 
             site_domain = get_setting(db, "site_domain")
+            bg_signal_text = get_setting(db, "bg_signal_text")
             password = decrypt_password(account.password) if is_encrypted(account.password) else account.password
 
             if task.task_type == TaskType.MISSION:
@@ -70,6 +71,7 @@ class TaskManager:
                     email=account.email, password=password,
                     account_code=account.account_code,
                     headless=headless, site_domain=site_domain,
+                    bg_signal_text=bg_signal_text,
                     confirm_text=get_setting(db, "follow_confirm_text"),
                     done_text=get_setting(db, "follow_done_text"),
                     completed_text=get_setting(db, "follow_completed_text"),
@@ -80,6 +82,7 @@ class TaskManager:
                     email=account.email, password=password,
                     order_code=task.task_code, account_code=account.account_code,
                     headless=headless, site_domain=site_domain,
+                    bg_signal_text=bg_signal_text,
                 )
 
             if result.get("success"):
