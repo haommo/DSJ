@@ -73,10 +73,9 @@ async def step_click_login(page: Page) -> bool:
 
 async def step_verify_login(page: Page, account_code: str) -> bool:
     await asyncio.sleep(3)
-    if not account_code:
-        raise Exception("account_code is required for verification")
-    span = page.locator(f'text={account_code}')
-    await span.wait_for(state="attached", timeout=VERIFY_TIMEOUT)
+    # New UI verification: login is considered successful only when Markets tab is visible.
+    markets_span = page.locator("//span[contains(@class, 'mt-5') and normalize-space()='Markets']").first
+    await markets_span.wait_for(state="visible", timeout=VERIFY_TIMEOUT)
     return True
 
 
