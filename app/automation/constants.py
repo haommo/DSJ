@@ -36,7 +36,7 @@ SELECTORS_INVITED_ME = [
 
 # URL templates (new site schema uses /h5/ios#/...)
 URL_LOGIN = "https://{domain}/h5/ios#/login"
-URL_TRANSACTION = "https://{domain}/h5/ios#/contractTransaction?symbolId=52946918015242240"
+URL_TRANSACTION = "https://{domain}/h5/ios#/trade"
 URL_ASSETS = "https://{domain}/h5/ios#/assets"
 
 
