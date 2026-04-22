@@ -20,7 +20,18 @@ async def init_browser(headless: bool = True) -> Tuple[Playwright, Browser, Page
             headless=headless, slow_mo=200,
             args=['--no-sandbox', '--disable-dev-shm-usage'],
         )
-        page = await browser.new_page()
+        # Emulate a mobile browser profile for sites that serve mobile-specific routes.
+        context = await browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            device_scale_factor=3,
+            user_agent=(
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+                "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 "
+                "Mobile/15E148 Safari/604.1"
+            ),
+        )
+        page = await context.new_page()
         page.set_default_timeout(DEFAULT_TIMEOUT)
         return pw, browser, page
     except Exception as e:

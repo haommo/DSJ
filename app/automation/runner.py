@@ -19,7 +19,7 @@ class DSJAutomation:
     """Chạy automation cho 1 account DSJ"""
 
     def __init__(self, email: str, password: str, order_code: str,
-                 account_code: str = None, site_domain: str = "dsj079.com",
+                 account_code: str = None, site_domain: str = "sjexvip.cc",
                  bg_signal_text: str = "BG Wealth Sharing"):
         self.email = email
         self.password = password
@@ -154,7 +154,7 @@ class AutomationManager:
     async def run_for_account(self, email: str, password: str,
                               order_code: str, account_code: str = None,
                               headless: bool = True,
-                              site_domain: str = "dsj079.com",
+                              site_domain: str = "sjexvip.cc",
                               bg_signal_text: str = "BG Wealth Sharing") -> Dict[str, Any]:
         key = f"{email}_{order_code}"
         if key in self.running:
@@ -173,7 +173,7 @@ automation_manager = AutomationManager()
 
 async def run_automation_for_account(email: str, password: str, order_code: str,
                                      account_code: str = None, headless: bool = True,
-                                     site_domain: str = "dsj079.com",
+                                     site_domain: str = "sjexvip.cc",
                                      bg_signal_text: str = "BG Wealth Sharing") -> Dict[str, Any]:
     return await automation_manager.run_for_account(
         email=email, password=password, order_code=order_code,
@@ -186,7 +186,7 @@ class DSJFollowAutomation:
     """Chạy follow order automation cho 1 account DSJ"""
 
     def __init__(self, email: str, password: str, account_code: str = None,
-                 site_domain: str = "dsj079.com",
+                 site_domain: str = "sjexvip.cc",
                  bg_signal_text: str = "BG Wealth Sharing",
                  confirm_text: str = "Confirm follow order",
                  done_text: str = "Done",
@@ -323,7 +323,7 @@ class DSJFollowAutomation:
 
 async def run_follow_order_for_account(
     email: str, password: str, account_code: str = None,
-    headless: bool = True, site_domain: str = "dsj079.com",
+    headless: bool = True, site_domain: str = "sjexvip.cc",
     bg_signal_text: str = "BG Wealth Sharing",
     confirm_text: str = "Confirm follow order",
     done_text: str = "Done",

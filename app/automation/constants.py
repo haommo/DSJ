@@ -1,5 +1,7 @@
 """Constants for DSJ automation: selectors, URLs, timeouts."""
 
+from urllib.parse import urlparse
+
 
 class AutomationError(Exception):
     pass
@@ -32,10 +34,46 @@ SELECTORS_INVITED_ME = [
     "//div[contains(@class, 'title') and contains(normalize-space(), 'invited me')]",
 ]
 
-# URL templates
-URL_LOGIN = "https://{domain}/pc/#/login"
-URL_TRANSACTION = "https://{domain}/pc/#/contractTransaction?symbolId=52946918015242240"
-URL_ASSETS = "https://{domain}/pc/#/assets"
+# URL templates (new site schema uses /h5/ios#/...)
+URL_LOGIN = "https://{domain}/h5/ios#/login"
+URL_TRANSACTION = "https://{domain}/h5/ios#/contractTransaction?symbolId=52946918015242240"
+URL_ASSETS = "https://{domain}/h5/ios#/assets"
+
+
+def normalize_site_domain(site_domain: str) -> str:
+    """Normalize site input to a hostname only.
+
+    Accepts values like:
+    - sjexvip.cc
+    - sjexvip.cc/h5/ios
+    - https://sjexvip.cc/h5/ios#/login
+    """
+    raw = (site_domain or "").strip()
+    if not raw:
+        return ""
+
+    host_candidate = raw
+    if "://" in raw:
+        parsed = urlparse(raw)
+        host_candidate = parsed.netloc or parsed.path
+
+    host_candidate = host_candidate.split("#", 1)[0].split("?", 1)[0].strip().strip("/")
+    if "/" in host_candidate:
+        host_candidate = host_candidate.split("/", 1)[0]
+
+    return host_candidate
+
+
+def build_login_url(site_domain: str) -> str:
+    return URL_LOGIN.format(domain=normalize_site_domain(site_domain))
+
+
+def build_transaction_url(site_domain: str) -> str:
+    return URL_TRANSACTION.format(domain=normalize_site_domain(site_domain))
+
+
+def build_assets_url(site_domain: str) -> str:
+    return URL_ASSETS.format(domain=normalize_site_domain(site_domain))
 
 # Screenshots directory
 SCREENSHOT_DIR = "screenshots"

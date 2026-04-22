@@ -9,7 +9,7 @@ from app.models.system_setting import SystemSetting
 DEFAULTS = {
     "batch_size": ("2", "Số account chạy đồng thời trong 1 batch"),
     "max_retries": ("2", "Số lần retry tự động cho account thất bại"),
-    "site_domain": ("dsj079.com", "Domain website DSJ để chạy automation"),
+    "site_domain": ("sjexvip.cc", "Domain website DSJ để chạy automation"),
     "follow_confirm_text": ("Confirm follow order", "Text nút xác nhận follow order"),
     "follow_done_text": ("Done", "Text nút Done/OK sau khi confirm follow"),
     "follow_completed_text": ("Follow order completed", "Text hiển thị khi follow thành công"),

@@ -9,7 +9,7 @@ from typing import Optional
 from app.automation.constants import (
     SELECTOR_EMAIL_INPUT, SELECTOR_PASSWORD_INPUT, SELECTOR_LOGIN_BTN,
     SELECTOR_ORDER_CODE_INPUT, SELECTOR_BALANCE, SELECTORS_INVITED_ME,
-    URL_LOGIN, URL_TRANSACTION, URL_ASSETS,
+    build_login_url, build_transaction_url, build_assets_url,
     VERIFY_TIMEOUT, INVITED_TAB_TIMEOUT, CONFIRM_TIMEOUT, BG_SIGNAL_TIMEOUT,
     BALANCE_TIMEOUT, FOLLOW_TIMEOUT,
 )
@@ -41,7 +41,7 @@ async def _find_visible_by_text(page: Page, text: str, timeout: int) -> tuple:
 
 
 async def step_go_to_login(page: Page, site_domain: str) -> bool:
-    url = URL_LOGIN.format(domain=site_domain)
+    url = build_login_url(site_domain)
     await page.goto(url, wait_until="networkidle")
     await asyncio.sleep(1)
     return True
@@ -81,7 +81,7 @@ async def step_verify_login(page: Page, account_code: str) -> bool:
 
 
 async def step_go_to_transaction(page: Page, site_domain: str) -> bool:
-    url = URL_TRANSACTION.format(domain=site_domain)
+    url = build_transaction_url(site_domain)
     await page.goto(url, wait_until="networkidle")
     await asyncio.sleep(2)
     return True
@@ -152,7 +152,7 @@ async def step_enter_code_and_confirm(
 async def step_get_balance(page: Page, site_domain: str) -> Optional[float]:
     """Navigate to assets page and extract balance."""
     try:
-        url = URL_ASSETS.format(domain=site_domain)
+        url = build_assets_url(site_domain)
         await page.goto(url, wait_until="networkidle")
         await asyncio.sleep(3)
         el = page.locator(SELECTOR_BALANCE)
