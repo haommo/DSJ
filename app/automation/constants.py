@@ -26,7 +26,7 @@ SELECTOR_EMAIL_INPUT = '//input[@placeholder="Please enter your email address"]'
 SELECTOR_PASSWORD_INPUT = '//input[@placeholder="Please enter your password"]'
 SELECTOR_LOGIN_BTN = '//div[contains(@class, "login-btn")]'
 SELECTOR_ORDER_CODE_INPUT = '//input[@placeholder="Please enter the order code"]'
-SELECTOR_BALANCE = '//span[contains(@class, "total-money")]'
+SELECTOR_BALANCE = '//div[contains(@class, "my-assets")]//span[contains(@class, "fs-24") and contains(@class, "fw-700")]'
 
 # Text-based selectors for "invited me" tab
 SELECTORS_INVITED_ME = [
